@@ -1,1 +1,4 @@
-arcade
+moderngl
+moderngl[headless]
+moderngl-window
+numpy
