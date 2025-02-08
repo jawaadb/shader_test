@@ -1,4 +1,3 @@
 moderngl
-moderngl[headless]
-moderngl-window
+glfw
 numpy
