@@ -1,56 +1,54 @@
-import moderngl_window as glw
-import moderngl as gl
-from helpers import read_file
+from helpers import *
+import moderngl, glfw, time
 import numpy as np
-import time
 
 
 WINDOW_SIZE = 1280, 720
 
 
 def main():
-    window_cls = glw.get_local_window_cls("pyglet")
-    window = window_cls(
-        size=WINDOW_SIZE,
-        fullscreen=False,
-        title="ModernGL Window",
-        resizable=False,
-        vsync=True,
-        gl_version=(3, 3),
-    )
+    if not glfw.init():
+        raise Exception("GLFW can't be initialised.")
 
-    ctx = window.ctx
-    glw.activate_context(window, ctx=ctx)
-    window.clear()
-    window.swap_buffers()
+    # Create windowed-mode window and its OpenGL context
+    glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
+    glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
+    glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+
+    window = glfw.create_window(*WINDOW_SIZE, "GLFW Window", None, None)
+    if not window:
+        glfw.terminate()
+        raise Exception("GLFW window can't be created.")
+
+    glfw.make_context_current(window)
+    ctx = moderngl.get_context()
 
     program = ctx.program(read_file("shader.vert"), read_file("shader.frag"))
 
-    x = np.linspace(-1.0, 1.0, 5_000)
-    y = np.sin(2 * np.pi * x) * 0.5
+    vertices = (
+        np.dstack([x := np.linspace(-1.0, 1.0, 5_000), np.sin(2 * np.pi * x) * 0.5])
+        .astype("f4")
+        .tobytes()
+    )
 
-    vertices = np.dstack([x, y])
+    vao = ctx.vertex_array(program, ctx.buffer(vertices), "in_vert")
 
-    vbo = ctx.buffer(vertices.astype("f4").tobytes())
-    vao = ctx.vertex_array(program, vbo, "in_vert")
-
-    fbo = ctx.framebuffer(color_attachments=[ctx.texture(WINDOW_SIZE, 3)])
-
-    uniform_time = program["u_time"]
     time_inc = 0
-
     t_prev = time.time()
 
-    while not window.is_closing:
-        uniform_time.value = time_inc
+    while not glfw.window_should_close(window):
+        glfw.poll_events()
 
-        fbo.use()
-        fbo.clear(0.0, 0.0, 0.0, 1.0)
-        vao.render(gl.LINE_STRIP)
+        ctx.clear(0.0, 0.0, 0.0, 1.0)
 
-        ctx.copy_framebuffer(window.fbo, fbo)
+        # Update shader uniforms
+        vao.program["u_time"] = time_inc
 
-        window.swap_buffers()
+        # Render vertices
+        vao.render(moderngl.LINE_STRIP)
+
+        # Swap front and back buffers
+        glfw.swap_buffers(window)
 
         time_inc += 1
 
