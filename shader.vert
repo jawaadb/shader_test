@@ -11,7 +11,7 @@ out vec3 v_color;
 uniform int u_time;
 
 const float amp = 0.05;
-const float freq = 2.0;
+const float freq = 1;
 
 void main() {
     v_color = in_color;

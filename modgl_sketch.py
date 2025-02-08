@@ -4,14 +4,14 @@ from helpers import read_file
 import numpy as np
 import time
 
-VERTEX_SHADER_PATH = "shaders/vertex_shader.glslv"
-FRAGMENT_SHADER_PATH = "shaders/fragment_shader.glslf"
+
+WINDOW_SIZE = 1280, 720
 
 
 def main():
     window_cls = glw.get_local_window_cls("pyglet")
     window = window_cls(
-        size=(512, 512),
+        size=WINDOW_SIZE,
         fullscreen=False,
         title="ModernGL Window",
         resizable=False,
@@ -24,22 +24,19 @@ def main():
     window.clear()
     window.swap_buffers()
 
-    prog = ctx.program(
-        vertex_shader=read_file(VERTEX_SHADER_PATH),
-        fragment_shader=read_file(FRAGMENT_SHADER_PATH),
-    )
+    program = ctx.program(read_file("shader.vert"), read_file("shader.frag"))
 
-    x = np.linspace(-1.0, 1.0, 50)
-    y = np.random.rand(50) - 0.5
+    x = np.linspace(-1.0, 1.0, 5_000)
+    y = np.sin(2 * np.pi * x) * 0.5
 
     vertices = np.dstack([x, y])
 
     vbo = ctx.buffer(vertices.astype("f4").tobytes())
-    vao = ctx.vertex_array(prog, vbo, "in_vert")
+    vao = ctx.vertex_array(program, vbo, "in_vert")
 
-    fbo = ctx.framebuffer(color_attachments=[ctx.texture((512, 512), 3)])
+    fbo = ctx.framebuffer(color_attachments=[ctx.texture(WINDOW_SIZE, 3)])
 
-    uniform_time = prog["u_time"]
+    uniform_time = program["u_time"]
     time_inc = 0
 
     t_prev = time.time()
